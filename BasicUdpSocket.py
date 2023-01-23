@@ -89,7 +89,7 @@ class BasicUDPSocket:
             return True
         
         except Exception as e:
-            print(e)
+            print("Error Sending The Message. Client Port Might Be Closed")
             return False
             
     # Receive UDP Messages and return adress and the message 

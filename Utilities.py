@@ -24,7 +24,7 @@ class DecoderEncoder:
 class ProtocolSymbols:
     
     # Seperator for TFTP
-    SEPERATOR = ";"
+    SEPERATOR = "/;"
 
     # Seperator used inside the file
     FILE_WORD_SEPERATOR = " "

@@ -6,6 +6,7 @@ import multiprocessing
 import sys
 
 LOOP_DELAY = 0.01
+TRIAL_TIME = 2
 
 def slowDown():
     time.sleep(LOOP_DELAY)
@@ -15,32 +16,45 @@ def slowDown():
 def handleServer(msg,ip,port):
 
     # Create a protocol and socket
+    print("Creating another port for TFTP ")
     protocol = TFTP()
     basicUdpSocket = BasicUDPSocket()
     basicUdpSocket.createUDPSocket()
 
     # Handle the first message //Should be DREQ
-    ret ,resp = protocol.handlePackage(msg)
+    if(protocol.decoderEncoder.convertToString(msg)[0] == ProtocolSymbols.DOWNLOAD_REQ_PACKAGE):
+        ret ,resp = protocol.handlePackage(msg)
+        print("ret: {}, resp: {}".format(ret,resp))
+
+    else:
+        print("Client Handler Requires Req Message. Closing")
+        ret = False
+
+    
+    i = 0
     endOfFile = False
 
-    print("ret: {}, resp: {}".format(ret,resp))
+    while(ret == True and endOfFile == False and i<TRIAL_TIME):
 
-    while(ret == True and endOfFile == False):
-
+        print("sending msg: {} to : {} : {}".format(resp,ip,port))
         basicUdpSocket.sendUDPMessage(resp,ip,port)
+        slowDown()
         succ, msg, addr = basicUdpSocket.receiveUDPMessage()
-        print("Message Received: {}".format(msg))
 
         if(succ):
             # If message received get the response
+            print("Message Received: {}, from: {} : {}".format(msg,ip,port))
             ret ,resp = protocol.handlePackage(msg)
             print("ret: {}, resp: {}".format(ret,resp))
 
+            i = 0
 
             if(protocol.ackPackage.lineNumber == "0"):
                 endOfFile = True
         
-        slowDown()
+        else:
+            print("Exiting in " + str(i))
+            i+=1
     
     if(endOfFile):
         print("File Sent Succesfully")

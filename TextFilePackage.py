@@ -90,7 +90,7 @@ class TextFilePackage(Package):
             return False
         
         if(len(strMsgList) != self.totalMsgLength ):
-            print("Wrong Package Length")
+            print("Wrong Package Length. The length is : {} but it should be {}".format(len(strMsgList),self.totalMsgLength))
             return False
 
         self.packageType = strMsgList[self.packageTypePlace]
@@ -98,6 +98,5 @@ class TextFilePackage(Package):
         self.numberOfCharacters = strMsgList[self.numberOfCharactersPlace]
         self.lineMsg = strMsgList[self.lineMsgPlace]
 
-        # print("msgLine: {}".format(self.lineMsg))
         return True
         

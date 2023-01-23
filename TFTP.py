@@ -46,7 +46,7 @@ from Utilities import *
 from AcknowledgementPackage import AcknowledgementPackage
 from DownoadRequestPackage import DownloadRequestPackage
 from TextFilePackage import TextFilePackage
-
+import sys
 
 
 
@@ -62,11 +62,17 @@ class TFTP(Protocol):
         self.textFilePackage = TextFilePackage()
 
         # Paths and Variables For File IO
-        self.folderPath = "Files\\"
-        self.listFilePath = "Files\\list.cfg"
 
-        # self.folderPath = ""
-        # self.listFilePath = "list.cfg"
+        if(sys.platform[:5] == "linux"):
+            self.fileSeperator = "/"
+        
+        else:
+            self.fileSeperator = "\\"
+            
+
+        self.folderPath = "Files"+self.fileSeperator
+        self.listFilePath = "Files"+self.fileSeperator +"list.cfg"
+
         self.wordSeperator = ProtocolSymbols.FILE_WORD_SEPERATOR
         
         self.wantedFileName = None
@@ -93,6 +99,8 @@ class TFTP(Protocol):
 
         # To decode or encode messages
         self.decoderEncoder = DecoderEncoder()
+
+        self.lastMsg = None
     
 
     # ------------------------ Abstract Methods ----------------------------------
@@ -100,6 +108,9 @@ class TFTP(Protocol):
     def handlePackage(self,msg):
 
         # Find package type and call their package handlers
+        if(msg == None):
+            print("Message Received None Type")
+            return False,0
         
         strMsg = self.decoderEncoder.convertToString(msg)
         strMsgList = strMsg.split(self.seperator)
@@ -111,9 +122,10 @@ class TFTP(Protocol):
         packageType = strMsgList[0]
         
         if(packageType not in self.functionDict.keys()):
-            return False
+            return False,0
         
         ret,msg = self.functionDict[packageType](msg)
+        self.lastMsg = msg
         return ret ,msg
 
 
@@ -124,6 +136,11 @@ class TFTP(Protocol):
     # This function is responsible for parsing the package. Writing the received lines into a file
     # Creating an ACK package
     def textFilePackageHandler(self,msg):
+
+
+        if(msg == None):
+            print("Null Message Received")
+            return False, None
         
         ret = self.textFilePackage.parseMsg(msg)
 
@@ -148,8 +165,9 @@ class TFTP(Protocol):
 
         # Create Ack Package and return the message
         self.ackPackage.lineNumber = self.textFilePackage.lineNumber
-        return True, self.ackPackage.createMsg()
-        
+        self.lastMsg = self.ackPackage.createMsg()
+        return True, self.lastMsg 
+ 
 
 
 
@@ -159,6 +177,11 @@ class TFTP(Protocol):
     # The last sent line number is stored in lastSentLine        
      
     def downloadRequestPackageHandler(self,msg):
+
+
+        if(msg == None):
+            print("Null Message Received")
+            return False, None
 
         ret = self.downloadRequestPackage.parseMsg(msg)
 
@@ -189,7 +212,8 @@ class TFTP(Protocol):
             self.textFilePackage.setLineMsg(wantedLine)
             self.textFilePackage.setNumberOfCharacters(len(wantedLine))
 
-            return True, self.textFilePackage.createMsg()
+            self.lastMsg = self.textFilePackage.createMsg()
+            return True, self.lastMsg
     
         return False, None
     
@@ -237,6 +261,10 @@ class TFTP(Protocol):
 
     # This function is responsible for the parsing of the ACK package. Creating a text File Package for the next line.
     def ackPackageHandler(self,msg):
+
+        if(msg == None):
+            print("Null Message Received")
+            return False, None
         
         #Send the next package 
         ret = self.ackPackage.parseMsg(msg)
@@ -261,7 +289,8 @@ class TFTP(Protocol):
                 self.textFilePackage.setLineMsg("0")
                 self.textFilePackage.setNumberOfCharacters(1)
 
-                return True, self.textFilePackage.createMsg()
+                self.lastMsg = self.textFilePackage.createMsg()
+                return True, self.lastMsg
             
             else:
                 
@@ -272,7 +301,9 @@ class TFTP(Protocol):
                 self.textFilePackage.setLineMsg(wantedLine)
                 self.textFilePackage.setNumberOfCharacters(len(wantedLine))
 
-                return True, self.textFilePackage.createMsg()
+                self.lastMsg = self.textFilePackage.createMsg()
+
+                return True, self.lastMsg
         
         return False, None
 
